@@ -1,0 +1,66 @@
+---
+- hosts: logstash_server
+  become: true
+  tasks:  
+    - name: Updating apt repo on Ubuntu
+      apt:
+        update_cache: yes
+        force_apt_get: yes
+        cache_valid_time: 3600
+
+    - name: Upgrading all packages on Ubuntu
+      apt:
+        upgrade: dist
+        force_apt_get: yes
+
+    - name: Installing OpenJDK Java
+      apt:
+        name: openjdk-11-jdk
+        state: present
+
+#adding the Elasticsearch package as test to make sure Logstach will run
+    - name: Adding Elasticsearch PGP Key
+      shell: |
+       wget -qO - https://artifacts.elastic.co/GPG-KEY-elasticsearch | sudo apt-key add -
+      args:
+         warn: no
+
+#Adding as well elastic serach repository for testing purposes
+    - name: Adding Elasticsearch repository
+      copy:
+       dest: /etc/apt/sources.list.d/elastic-7.x.list
+       content: |
+         deb https://artifacts.elastic.co/packages/7.x/apt stable main
+
+    - name: Transport Https for Logstash
+      apt:
+        name: apt-transport-https
+        state: present
+
+
+# Updating and Installing the Logstash package 
+    - name: Installing logstash package
+      apt:
+        name: logstash
+        update_cache: yes
+
+# Copying The configuration file for logstash
+    - name: Copying the config file for logstash
+      copy:
+        src: "templates/logstash.conf.j2"
+        dest: "/etc/logstash/conf.d/logstash.conf"
+
+
+# Enable and start the Elasticsearch service
+    - name: Enable logstash
+      systemd:
+        name: logstash
+        enabled: yes
+
+    - name: Start logstash
+      systemd:
+        name: logstash
+        state: started
+
+    
+
