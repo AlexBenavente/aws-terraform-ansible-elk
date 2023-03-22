@@ -1,0 +1,78 @@
+---
+- hosts: Kibana_server
+  become: true
+  tasks:  
+    - name: Updating apt repo on Ubuntu
+      apt:
+        update_cache: yes
+        force_apt_get: yes
+        cache_valid_time: 3600
+
+    - name: Upgrading all packages on Ubuntu
+      apt:
+        upgrade: dist
+        force_apt_get: yes
+
+    - name: Installing OpenJDK Java
+      apt:
+        name: openjdk-11-jdk
+        state: present
+#adding the Elasticsearch package as test to make sure Kibana will run
+    - name: Adding Elasticsearch PGP Key
+      shell: |
+        wget -qO - https://artifacts.elastic.co/GPG-KEY-elasticsearch | sudo apt-key add -
+      args:
+          warn: no
+
+#Adding as well elastic serach repository for testing purposes
+    - name: Adding Elasticsearch repository
+      copy:
+        dest: /etc/apt/sources.list.d/elastic-7.x.list
+        content: |
+          deb https://artifacts.elastic.co/packages/7.x/apt stable main
+
+    - name: Transport Http for Kibana
+      apt:
+        name: apt-transport-https
+        state: present
+
+    - name: Install Kibana with apt
+      apt:
+          name: kibana
+          update_cache: yes
+  
+# Configurations
+    - name: Updating the config file to allow outside access
+      lineinfile:
+        destfile: /etc/kibana/kibana.yml
+        regexp: 'server.host:'
+        line: 'server.host: 0.0.0.0'
+
+    - name: Defining server port
+      lineinfile:
+        destfile: /etc/kibana/kibana.yml
+        regexp: 'server.port:'
+        line: 'server.port: 5601'
+      
+    - name: Defining Elasticsearch hosts
+      lineinfile:
+        destfile: /etc/kibana/kibana.yml
+        regexp: 'elasticsearch.hosts:'
+        line: 'elasticsearch.hosts: "http://192.168.2.217:9200"'
+    
+# Starting Kibana
+    - name: Enabling Kibana
+      systemd:
+        name: kibana
+        enabled: yes
+
+    - name: Starting Kibana
+      systemd:
+        name: kibana
+        state: started
+    
+    - name: Starting Kibana
+      service:
+        name: kibana
+        state: started
+
