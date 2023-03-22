@@ -1,0 +1,85 @@
+---
+- hosts: app_server
+  become: true
+  tasks: 
+
+    - name: Updating apt repo on Ubuntu
+      apt:
+        update_cache: yes
+        force_apt_get: yes
+        cache_valid_time: 3600
+
+    - name: Upgrading all packages on Ubuntu
+      apt:
+        upgrade: dist
+        force_apt_get: yes
+
+    - name: Installing OpenJDK Java
+      apt:
+        name: openjdk-11-jdk
+        state: present
+
+  # Adding the Elasticsearch package as test to make sure Kibana will run
+    - name: Adding Elasticsearch PGP Key
+      shell: |
+        wget -qO - https://artifacts.elastic.co/GPG-KEY-elasticsearch | sudo apt-key add -
+      args:
+          warn: no
+
+  #Adding as well elastic serach repository for testing purposes
+    - name: Adding Elasticsearch repository
+      copy:
+        dest: /etc/apt/sources.list.d/elastic-7.x.list
+        content: |
+          deb https://artifacts.elastic.co/packages/7.x/apt stable main
+
+    - name: Install Metricbeat onto the demo servers
+      apt:
+        name: metricbeat
+        update_cache: yes
+
+    - name: Copying config file for Metricbeat
+      copy:
+        src: "templates/metricbeat.yml.j2"
+        dest: "/etc/metricbeat/metricbeat.yml"
+
+    - name: Enabling Metricbeat
+      systemd:
+        name: metricbeat
+        enabled: yes
+
+    - name: Starting Metricbeat
+      systemd:
+        name: metricbeat
+        state: started
+
+    - name: Start metricbeats service 
+      service:
+        name: metricbeat
+        state: started
+
+    - name: Install Filebeat onto the demo servers
+      apt:
+        name: filebeat
+        update_cache: yes
+
+    - name: Copying config file for Filebeat
+      copy:
+        src: "templates/filebeat.yml.j2"
+        dest: "/etc/filebeat/filebeat.yml"
+
+    - name: Enabling Filebeat
+      systemd:
+        name: filebeat
+        enabled: yes
+
+    - name: Starting Filebeat
+      systemd:
+        name: filebeat
+        state: started
+        
+    - name: Start Filebeat service 
+      service:
+        name: filebeat
+        state: started
+        
