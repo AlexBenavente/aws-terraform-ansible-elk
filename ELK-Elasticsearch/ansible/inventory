@@ -1,0 +1,10 @@
+[bastionhost]
+#<IP address>
+
+[elasticsearch_server]
+#<IP address>
+
+[elasticsearch_server:vars]
+ansible_user=ubuntu
+ansible_ssh_private_key_file=~/.ssh/elk_keypair.pem
+ansible_ssh_common_args=" -o ProxyCommand=\"ssh -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no -q ubuntu@<bastionhostIP> -o IdentityFile=~/.ssh/elk_keypair.pem -W %h:%p\""

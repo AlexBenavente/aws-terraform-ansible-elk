@@ -1,0 +1,86 @@
+---
+- hosts: elasticsearch_server
+  become: true
+  tasks:
+    - name: Updating apt repo on Ubuntu
+      apt:
+        update_cache: yes
+        force_apt_get: yes
+        cache_valid_time: 3600
+
+    - name: Upgrading all packages on Ubuntu
+      apt:
+        upgrade: dist
+        force_apt_get: yes
+
+    - name: Installing transport-https
+      apt:
+        name: apt-transport-https
+        state: present
+
+    - name: Installing OpenJDK Java
+      apt:
+        name: openjdk-11-jdk
+        state: present
+
+    - name: Adding Elasticsearch PGP Key
+      shell: |
+        wget -qO - https://artifacts.elastic.co/GPG-KEY-elasticsearch | sudo apt-key add -
+      args:
+        warn: no
+
+    - name: Adding Elasticsearch repository
+      copy:
+        dest: /etc/apt/sources.list.d/elastic-7.x.list
+        content: |
+          deb https://artifacts.elastic.co/packages/7.x/apt stable main
+
+    - name: Installing Elasticsearch package
+      apt:
+        name: elasticsearch
+        state: present
+        update_cache: yes
+
+    - name: Defining elasticsearch node
+      lineinfile:
+        destfile: /etc/elasticsearch/elasticsearch.yml
+        regexp: 'node.name:'
+        line: 'node.name: master'
+
+    - name: Defining elasticsearch node
+      lineinfile:
+        destfile: /etc/elasticsearch/elasticsearch.yml
+        regexp: 'cluster.initial_master_nodes:'
+        line: 'cluster.initial_master_nodes: ["master"]'
+
+# Update Elasticsearch config file to allow access (to secure Elasticsearch, bind to 'localhost'). 
+    - name: Updating the config file to allow outside access
+      lineinfile:
+        destfile: /etc/elasticsearch/elasticsearch.yml
+        regexp: 'network.host:'
+        line: 'network.host: 0.0.0.0'
+
+# Update Elasticsearch port in config file 
+    - name: Updating the port in config file 
+      lineinfile:
+        destfile: /etc/elasticsearch/elasticsearch.yml
+        regexp: 'http.port:'
+        line: 'http.port: 9200'
+
+# Update Elasticsearch Discovery in config file 
+    - name: Updating the discovery in config file 
+      lineinfile:
+        destfile: /etc/elasticsearch/elasticsearch.yml
+        regexp: 'discovery.seed_hosts:'
+        line: 'discovery.seed_hosts: []'
+
+# Enable and start the Elasticsearch service
+    - name: Enabling Elasticsearch
+      systemd:
+        name: elasticsearch
+        enabled: yes
+
+    - name: Starting Elasticsearch
+      systemd:
+        name: elasticsearch
+        state: started
