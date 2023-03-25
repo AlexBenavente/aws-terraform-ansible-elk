@@ -1,16 +1,13 @@
 [bastionhost]
-#<IP address>
+bastion ip=1.1.1.1
 
-[logstash_server]
-#<IP address>
+[servers]
+app_server ip=2.2.2.2
+elasticsearch_server ip=3.3.3.3
+logstash_server ip=4.4.4.4
+kibana_server ip=5.5.5.5
 
-[logstash_server:vars]
+[all:vars]
 ansible_user=ubuntu
 ansible_ssh_private_key_file=~/.ssh/elk_keypair.pem
-ansible_ssh_common_args=" -o ProxyCommand=\"ssh -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no -q ubuntu@<bastionhostIP> -o IdentityFile=~/.ssh/elk_keypair.pem -W %h:%p\""
-
-
-
-
-
-
+ansible_ssh_common_args=" -o ProxyCommand=\"ssh -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no -q ubuntu@<bastion> -o IdentityFile=~/.ssh/elk_keypair.pem -W %h:%p\""
