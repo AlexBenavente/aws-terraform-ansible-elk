@@ -1,85 +1,83 @@
 ---
 - hosts: app_server
   become: true
-  tasks: 
-
+  tasks:
     - name: Updating apt repo on Ubuntu
-      apt:
-        update_cache: yes
-        force_apt_get: yes
+      ansible.builtin.apt:
+        update_cache: true
+        force_apt_get: true
         cache_valid_time: 3600
 
     - name: Upgrading all packages on Ubuntu
-      apt:
+      ansible.builtin.apt:
         upgrade: dist
-        force_apt_get: yes
+        force_apt_get: true
 
     - name: Installing OpenJDK Java
-      apt:
+      ansible.builtin.apt:
         name: openjdk-11-jdk
         state: present
 
-  # Adding the Elasticsearch package as test to make sure Kibana will run
-    - name: Adding Elasticsearch PGP Key
-      shell: |
-        wget -qO - https://artifacts.elastic.co/GPG-KEY-elasticsearch | sudo apt-key add -
-      args:
-          warn: no
+    - name: Adding Elasticsearch GPG Key
+      ansible.builtin.apt_key:
+        url: https://artifacts.elastic.co/GPG-KEY-elasticsearch
+        state: present
 
-  #Adding as well elastic serach repository for testing purposes
     - name: Adding Elasticsearch repository
-      copy:
-        dest: /etc/apt/sources.list.d/elastic-7.x.list
-        content: |
-          deb https://artifacts.elastic.co/packages/7.x/apt stable main
+      ansible.builtin.apt_repository:
+        repo: deb https://artifacts.elastic.co/packages/7.x/apt stable main
+        state: present
+        filename: elastic-7.x.list
+        update_cache: true
 
     - name: Install Metricbeat onto the demo servers
-      apt:
+      ansible.builtin.apt:
         name: metricbeat
-        update_cache: yes
+        update_cache: true
 
     - name: Copying config file for Metricbeat
-      copy:
+      ansible.builtin.copy:
         src: "templates/metricbeat.yml.j2"
         dest: "/etc/metricbeat/metricbeat.yml"
+        mode: "preseve"
 
     - name: Enabling Metricbeat
-      systemd:
+      ansible.builtin.systemd:
         name: metricbeat
-        enabled: yes
+        enabled: true
 
     - name: Starting Metricbeat
-      systemd:
+      ansible.builtin.systemd:
         name: metricbeat
         state: started
 
-    - name: Start metricbeats service 
-      service:
+    - name: Start metricbeats service
+      ansible.builtin.service:
         name: metricbeat
         state: started
 
     - name: Install Filebeat onto the demo servers
-      apt:
+      ansible.builtin.apt:
         name: filebeat
-        update_cache: yes
+        update_cache: true
 
     - name: Copying config file for Filebeat
-      copy:
+      ansible.builtin.copy:
         src: "templates/filebeat.yml.j2"
         dest: "/etc/filebeat/filebeat.yml"
+        mode: "preseve"
 
     - name: Enabling Filebeat
-      systemd:
+      ansible.builtin.systemd:
         name: filebeat
-        enabled: yes
+        enabled: true
 
     - name: Starting Filebeat
-      systemd:
+      ansible.builtin.systemd:
         name: filebeat
         state: started
-        
-    - name: Start Filebeat service 
-      service:
+
+    - name: Start Filebeat service
+      ansible.builtin.service:
         name: filebeat
         state: started
-        
